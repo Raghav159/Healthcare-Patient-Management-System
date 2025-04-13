@@ -6,21 +6,21 @@ import { MedicalHistory, MedicalHistoryCreate } from '../../api/types';
 import Button from '../common/Button';
 import { toast } from 'react-toastify';
 import { FileText, Calendar } from 'lucide-react';
-import { formatDate } from '../../utils/dateUtils';
 import { useState } from 'react';
+
+// Define the Yup schema with explicit typing
+const schema = yup.object().shape({
+  diagnosis: yup.string().required('Diagnosis is required').trim(),
+  treatment: yup.string().nullable().optional(),
+  date: yup.string().required('Date is required'),
+  patientId: yup.number().required('Patient ID is required').positive().integer(),
+}).required() as yup.ObjectSchema<MedicalHistoryCreate>;
 
 interface MedicalHistoryFormProps {
   medicalHistory?: MedicalHistory;
   patientId: number;
   onSuccess?: () => void;
 }
-
-const schema = yup.object().shape({
-    diagnosis: yup.string().required('Diagnosis is required').trim(),
-    treatment: yup.string().nullable().optional(), // Allow null or undefined
-    date: yup.string().required('Date is required'), // Relaxed date validation
-    patientId: yup.number().required('Patient ID is required').positive().integer(),
-  }).required();
 
 export const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
   medicalHistory,
@@ -33,10 +33,10 @@ export const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
       ? {
           patientId,
           diagnosis: medicalHistory.diagnosis,
-          treatment: medicalHistory.treatment || undefined,
-          date: formatDate(medicalHistory.date, 'yyyy-MM-dd'),
+          treatment: medicalHistory.treatment ?? undefined,
+          date: new Date(medicalHistory.date).toISOString().split('T')[0], // Ensure ISO date format (YYYY-MM-DD)
         }
-      : { patientId },
+      : { patientId, diagnosis: '', treatment: '', date: '' },
   });
 
   const [loading, setLoading] = useState(false);
@@ -44,18 +44,24 @@ export const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
   const onSubmit: SubmitHandler<MedicalHistoryCreate> = async (data) => {
     setLoading(true);
     try {
+      const payload: MedicalHistoryCreate = {
+        ...data,
+        treatment: data.treatment || undefined, // Normalize empty string to undefined
+      };
+
       if (medicalHistory) {
-        await updateMedicalHistory(medicalHistory.id, data);
+        await updateMedicalHistory(medicalHistory.id, payload);
         toast.success('Medical history updated successfully');
       } else {
-        await createMedicalHistory(data);
+        await createMedicalHistory(payload);
         toast.success('Medical history created successfully');
       }
-      reset({ patientId });
+      reset({ patientId, diagnosis: '', treatment: '', date: '' });
       onSuccess?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save medical history';
       console.error('Error saving medical history:', error);
-      toast.error(error.message || 'Failed to save medical history');
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -111,7 +117,11 @@ export const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
         <Button type="submit" className="btn-primary" disabled={loading}>
           {loading ? 'Saving...' : medicalHistory ? 'Update Record' : 'Create Record'}
         </Button>
-        <Button type="button" className="btn-ghost" onClick={() => reset({ patientId })}>
+        <Button
+          type="button"
+          className="btn-ghost"
+          onClick={() => reset({ patientId, diagnosis: '', treatment: '', date: '' })}
+        >
           Reset
         </Button>
       </div>

@@ -1,16 +1,18 @@
+// src/context/AuthContext.tsx
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+interface User {
+  id: number;
+  email: string;
+  role: string;
+}
 
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-}
-
-interface User {
-  id: number;
-  email: string;
-  role: string;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -24,12 +26,12 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-export const AuthProvider = ({ children }: AuthProviderProps) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is stored in localStorage
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
@@ -38,23 +40,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    // In a real application, you would make an API call to authenticate
-    // For now, we'll simulate a successful login
     const mockUser: User = {
       id: 1,
       email,
       role: 'admin',
     };
-    
     setUser(mockUser);
     setIsAuthenticated(true);
     localStorage.setItem('user', JSON.stringify(mockUser));
+    navigate('/dashboard');
   };
 
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('user');
+    navigate('/login');
   };
 
   return (

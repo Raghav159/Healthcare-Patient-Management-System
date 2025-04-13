@@ -1,24 +1,27 @@
+// src/pages/Patients.tsx
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Plus, Search, Edit, Trash, Eye } from 'lucide-react';
-import { getPatients, deletePatient } from '../api/patients';
+import { getPatients, deletePatient } from '@/api/patients';
 import { format } from 'date-fns';
+import { Patient } from '@/api/types';
 
 const Patients: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(0);
   const limit = 10;
 
-  const { data, isLoading, error, refetch } = useQuery(
-    ['patients', page, searchTerm],
-    () => getPatients({ 
-      name: searchTerm || undefined, 
-      skip: page * limit, 
-      limit 
-    }),
-    { keepPreviousData: true }
-  );
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['patients', page, searchTerm],
+    queryFn: () =>
+      getPatients({
+        name: searchTerm || undefined,
+        skip: page * limit,
+        limit,
+      }),
+    placeholderData: (prev) => prev,
+  });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +53,7 @@ const Patients: React.FC = () => {
       </div>
 
       {/* Search and filter */}
-      <div className="card bg-white mb-6">
+      <div className="card bg-base-100 mb-6 shadow-xl">
         <div className="card-body">
           <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
             <div className="form-control flex-1">
@@ -72,7 +75,7 @@ const Patients: React.FC = () => {
       </div>
 
       {/* Patients list */}
-      <div className="card bg-white">
+      <div className="card bg-base-100 shadow-xl">
         <div className="card-body">
           {isLoading ? (
             <div className="flex justify-center p-8">
@@ -103,12 +106,12 @@ const Patients: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {data?.map((patient: { id: React.Key | null | undefined; name: string | number | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | null | undefined; email: string | number | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | null | undefined; phone: any; dob: string | number | Date; }) => (
+                    {data?.map((patient: Patient) => (
                       <tr key={patient.id}>
                         <td>
-                          <Link 
+                          <Link
                             to={`/patients/${patient.id}`}
-                            className="font-medium hover:text-primary-700"
+                            className="font-medium hover:text-primary"
                           >
                             {patient.name}
                           </Link>
@@ -118,22 +121,22 @@ const Patients: React.FC = () => {
                         <td>{format(new Date(patient.dob), 'MMM dd, yyyy')}</td>
                         <td>
                           <div className="flex space-x-2">
-                            <Link 
+                            <Link
                               to={`/patients/${patient.id}`}
                               className="btn btn-sm btn-circle btn-ghost text-blue-600"
                               title="View"
                             >
                               <Eye size={16} />
                             </Link>
-                            <Link 
+                            <Link
                               to={`/patients/${patient.id}/edit`}
                               className="btn btn-sm btn-circle btn-ghost text-amber-600"
                               title="Edit"
                             >
                               <Edit size={16} />
                             </Link>
-                            <button 
-                              onClick={() => handleDelete(Number(patient.id))}
+                            <button
+                              onClick={() => handleDelete(patient.id)}
                               className="btn btn-sm btn-circle btn-ghost text-red-600"
                               title="Delete"
                             >
@@ -146,13 +149,12 @@ const Patients: React.FC = () => {
                   </tbody>
                 </table>
               </div>
-              
               <div className="flex justify-between items-center mt-6">
                 <div className="text-sm text-gray-600">
                   Showing {data?.length} of {data?.length} patients
                 </div>
                 <div className="join">
-                  <button 
+                  <button
                     className="join-item btn"
                     disabled={page === 0}
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
@@ -160,7 +162,7 @@ const Patients: React.FC = () => {
                     Previous
                   </button>
                   <button className="join-item btn btn-active">{page + 1}</button>
-                  <button 
+                  <button
                     className="join-item btn"
                     disabled={(data?.length || 0) < limit}
                     onClick={() => setPage((p) => p + 1)}

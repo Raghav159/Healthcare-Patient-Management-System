@@ -1,14 +1,14 @@
 // src/pages/MedicalHistory.tsx
 import { useState, useEffect } from 'react';
 import { getPatientMedicalHistory } from '../api/medicalHistory';
-import MedicalHistory from '../api/types';
+import { MedicalHistory } from '../api/types';
 import Card from '../components/common/Card';
 import Loading from '../components/common/Loading';
 import { toast } from 'react-toastify';
 import { formatDate } from '../utils/dateUtils';
 import { FileText, Calendar, User } from 'lucide-react';
 
-export const MedicalHistory: React.FC = () => {
+export const MedicalHistoryPage: React.FC = () => {
   const [history, setHistory] = useState<MedicalHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [patientId, setPatientId] = useState<number | undefined>();
